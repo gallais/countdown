@@ -52,16 +52,21 @@ getGuess str = do
              ++ squareBrackets str
   getLine
 
+isLeft :: Either a b -> Bool
+isLeft (Left _)  = True
+isLeft (Right _) = False
+
 game :: Trie Char -> Distr Char -> Distr Char -> IO ()
 game dict vowel consonant = do
   pool  <- buildPool 9 vowel consonant
   guess <- getGuess pool
-  print $ score guess pool dict
-  putStrLn $ isBest guess pool dict
+  mark  <- return $ score guess pool dict
+  print $ mark
+  putStrLn $ isBest (if isLeft mark then [] else guess) pool dict
   menu False dict vowel consonant
 
-waitFor :: (Char -> Maybe (IO a)) -> IO a
-waitFor handle = getChar >>= maybe (waitFor handle) id . handle
+waitFor :: (Char -> IO a) -> IO a
+waitFor handle = getChar >>= handle
 
 menu :: Bool -> Trie Char -> Distr Char -> Distr Char -> IO ()
 menu display d v c = do
@@ -70,9 +75,9 @@ menu display d v c = do
    else return ())
   waitFor handleMenu
   where
-    handleMenu 's' = Just $ game d v c
-    handleMenu 'q' = Just $ clear >> putStrLn "Have a nice day!"
-    handleMenu _   = Just $ clear >> menu True d v c
+    handleMenu 's' = game d v c
+    handleMenu 'q' = clear >> putStrLn "Have a nice day!"
+    handleMenu _   = clear >> menu True d v c
 
 main :: IO ()
 main = do
